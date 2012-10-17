@@ -34,4 +34,5 @@ HTTP.
 ## Status
 
 Done: Client downloads router-list and builds circuit
+
 Currently: Exchanging keys with all routers in circuit
