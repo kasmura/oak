@@ -3,10 +3,11 @@
 Oak is Node.js project delivering an anonymous and secure network between nodes. It uses encrypted JSON-onions to make
 all communication untracable and obscured.
 
+**This is the planned result of oak:**
+### Client
 ```js
-var client = require('oak');
-client.connect('oak://127.0.0.1:4321');
-client.buildCircuit('127.0.0.1:1234', 5);
+var client = require('oak').client();
+client.network = 'oak://127.0.0.1:4321';
 
 client.on('connection', function(socket) {
   socket.on('news', function (data) {
@@ -14,6 +15,23 @@ client.on('connection', function(socket) {
     socket.send('myEvent', { my: 'data'});
   });    
 });
+
+client.connect('127.0.0.1:1234');
+```
+
+### Server
+```js
+var server = require('oak').server();
+server.network = 'oak://127.0.0.1:4321';
+
+server.on('connection', function (socket) {
+  socket.send('news', { hello: 'world'});
+  socket.on('myEvent', function (data) {
+    console.log(data);
+  });
+});
+
+server.listen('127.0.0.1:1234')
 ```
 
 ## Model
