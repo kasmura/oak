@@ -14,29 +14,9 @@ bob.generateKeys('hex');
 var bob_secret;
 
 router.on('connection', function(socket) {
-  console.log('New circuit');
-  var nextRouterConnected = false;
-  var nextRouter; 
     
   socket.on('tordata', function(data) {
-    if(data.redirect == true) {
-      if(nextRouterConnected == false) {
-        var next0 = data.next.split(':');
-        var next = {ip: next0[0], port: next0[1]}
-      
-        var sockets = require('./tcp.js').client(next.ip, next.port);
-        sockets.on('connection', function(socket2) {
-          nextRouter = socket2;
-          nextRouterConnected = true;
-          nextRouter.on('tordataback', function(backmessage) {
-            socket.send('tordataback', backmessage);
-          });
-          nextRouter.send('tordata', data.content);
-        });
-      } else {
-        nextRouter.send('tordata', data.content);
-      }
-    } else {
+    if(data.redirect == false) {
       if(data.content.type == 'pkex') {
         bob_secret = hash(bob.computeSecret(data.content.publickey, 'hex', 'hex'));
         console.log('My key: ' + bob_secret);
@@ -47,19 +27,13 @@ router.on('connection', function(socket) {
           publickey: bob_publickey
         }
         socket.send('tordataback', backmessage);
+      } else if(data.content.type == 'message') {
+        console.log(data.content.message);
       } else {
         console.log('Received unexpected data');
       }
     }
   });
-});
-
-var OAKDIRIP = '127.0.0.1';
-var OAKDIRPORT = 1337
-var sockets = require('./tcp.js').client(OAKDIRIP, OAKDIRPORT);
-sockets.on('connection', function(socket) {
-  socket.send('port', PORT);
-  console.log('On network: oak://' + OAKDIRIP + ':' + OAKDIRPORT)
 });
 
 function encrypt(text, key){

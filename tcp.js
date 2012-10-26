@@ -8,6 +8,8 @@ var _ = require("underscore");
 // TCP functionality
 var net = require('net');
 
+var LOGMODE = false;
+
 // For initalilising a new TCP server
 function server(port) {
     
@@ -54,6 +56,7 @@ function server(port) {
             event: event
           }
         }
+        tcpjsLog('tcp.js: Sending data');
         socket.write(JSON.stringify(message));
       }
       
@@ -62,7 +65,7 @@ function server(port) {
       };
       var socket = _.extend(socket0, extraproto);
       
-      console.log('tcp.js: New - ' + socket.remoteAddress + ':' + socket.remotePort);
+      tcpjsLog('tcp.js: New - ' + socket.remoteAddress + ':' + socket.remotePort);
       
       sockets.emit('connection', socket);
       
@@ -72,12 +75,12 @@ function server(port) {
         if(message.event && message.content)
           socket.emit(message.event, message.content);
         else
-          console.log('Invalid message');
+          tcpjsLog('Invalid message');
       });
     });
     
     server.listen(PORT, HOST);
-    console.log('tcp.js: Running on ' + HOST + ':' + PORT);
+    tcpjsLog('tcp.js: Running on ' + HOST + ':' + PORT);
     
     return sockets;
 }
@@ -115,6 +118,7 @@ function client(host, port) {
           event: event
         }
       }
+      tcpjsLog('tcp.js: Sending data');
       client.write(JSON.stringify(message));
     }
     
@@ -125,19 +129,25 @@ function client(host, port) {
     socket = _.extend(socket0, extraproto);
     
     client.connect(PORT, '127.0.0.1', function() {
-      console.log('tcp.js: Connected to ' + HOST + ':' + PORT);
+      tcpjsLog('tcp.js: Connected to ' + HOST + ':' + PORT);
       sockets.emit('connection', socket);
     });
     
     
-    client.on('data', function(data) {   
+    client.on('data', function(data) {
+      tcpjsLog('tcp.js: New data');
       var message = JSON.parse(data);
       if(message.event && message.content)
         socket.emit(message.event, message.content);
       else
-        console.log('Invalid message');
+        tcpjsLog('Invalid message');
     });
     
     return sockets;
 }
 module.exports.client = client;
+
+function tcpjsLog(data) {
+    if(LOGMODE == true)
+      console.log(data);
+}

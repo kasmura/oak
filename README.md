@@ -68,5 +68,8 @@ Client downloads router-list and builds circuit
 
 Exchanging keys with all routers in circuit
 
-### Currently
 Experimental communication with last-node
+
+### Currently
+Backstream communication
+Enabling encryption
