@@ -1,6 +1,6 @@
 # Oak
 
-Oak is Node.js project delivering an anonymous and secure network between nodes. It uses encrypted JSON-onions to make
+Oak a is Node.js project delivering an anonymous and secure network between nodes. It uses encrypted JSON-onions to make
 all communication untracable and obscured.
 
 **This is the planned result of oak:**
