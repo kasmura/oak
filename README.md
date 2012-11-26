@@ -70,6 +70,7 @@ Exchanging keys with all routers in circuit
 
 Experimental communication with last-node
 
+Enabling encryption
+
 ### Currently
 Backstream communication
-Enabling encryption
