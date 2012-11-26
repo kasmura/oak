@@ -1,4 +1,4 @@
-console.log('OAK ROUTER v0.1');
+console.log('OAK SERVER v0.1');
 console.log('- Kasper Rasmussen');
 console.log();
 console.log('[LOG]');
@@ -11,12 +11,14 @@ var router = require('./tcp.js').server(PORT);
 
 var bob = crypto.getDiffieHellman('modp5');
 bob.generateKeys('hex');
-var bob_secret;
+var bob_secret = undefined;
 
 router.on('connection', function(socket) {
     
-  socket.on('tordata', function(data) {
-    if(data.redirect == false) {
+  socket.on('tordata', function(data0) {
+    var data = data0;
+    if(bob_secret == undefined) {
+      console.log(data);
       if(data.content.type == 'pkex') {
         bob_secret = hash(bob.computeSecret(data.content.publickey, 'hex', 'hex'));
         console.log('My key: ' + bob_secret);
@@ -27,10 +29,15 @@ router.on('connection', function(socket) {
           publickey: bob_publickey
         }
         socket.send('tordataback', backmessage);
-      } else if(data.content.type == 'message') {
-        console.log(data.content.message);
       } else {
         console.log('Received unexpected data');
+      }   
+    } else {
+      console.log(data);
+      data = JSON.parse(decrypt(data, bob_secret));
+      console.log('Object: ' + JSON.stringify(data));
+      if(data.content.type == 'message') {
+        console.log('Message: ' + data.content.message);
       }
     }
   });

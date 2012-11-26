@@ -11,15 +11,43 @@ var router = require('./tcp.js').server(PORT);
 
 var bob = crypto.getDiffieHellman('modp5');
 bob.generateKeys('hex');
-var bob_secret;
+var bob_secret = undefined; 
 
 router.on('connection', function(socket) {
   console.log('New circuit');
   var nextRouterConnected = false;
   var nextRouter; 
     
-  socket.on('tordata', function(data) {
-    if(data.redirect == true) {
+  socket.on('tordata', function(data0) {
+    var data = data0;
+    //if(bob_secret !== undefined) {
+    //  console.log(data0);
+    //  console.log('bob_secret = ' + bob_secret);
+    //  data = decrypt(data0, bob_secret);
+    //} else {
+    //    data = data0;
+    //}
+    //console.log(data);
+    ////var data = data0;
+    if(bob_secret == undefined) {
+      console.log(data);
+      if(data.content.type == 'pkex') {
+        bob_secret = hash(bob.computeSecret(data.content.publickey, 'hex', 'hex'));
+        console.log('My key: ' + bob_secret);
+        var bob_publickey = bob.getPublicKey('hex');
+        var backmessage = {
+          oak: data.content.oak,
+          type: 'pkex',
+          publickey: bob_publickey
+        }
+        socket.send('tordataback', backmessage);
+      } else {
+        console.log('Received unexpected data');
+      }   
+    } else {
+      console.log(data);
+      data = JSON.parse(decrypt(data, bob_secret));
+      console.log('Object: ' + JSON.stringify(data));
       if(nextRouterConnected == false) {
         var next0 = data.next.split(':');
         var next = {ip: next0[0], port: next0[1]}
@@ -35,21 +63,7 @@ router.on('connection', function(socket) {
         });
       } else {
         nextRouter.send('tordata', data.content);
-      }
-    } else {
-      if(data.content.type == 'pkex') {
-        bob_secret = hash(bob.computeSecret(data.content.publickey, 'hex', 'hex'));
-        console.log('My key: ' + bob_secret);
-        var bob_publickey = bob.getPublicKey('hex');
-        var backmessage = {
-          oak: data.content.oak,
-          type: 'pkex',
-          publickey: bob_publickey
-        }
-        socket.send('tordataback', backmessage);
-      } else {
-        console.log('Received unexpected data');
-      }
+      }        
     }
   });
 });
@@ -62,16 +76,17 @@ sockets.on('connection', function(socket) {
   console.log('On network: oak://' + OAKDIRIP + ':' + OAKDIRPORT)
 });
 
-function encrypt(text, key){
-  var cipher = crypto.createCipher('aes-256-cbc',key)
+function encrypt(text, key) {
+  var cipher = crypto.createCipher('aes-256-cbc', key)
   var crypted = cipher.update(text,'utf8','hex')
   crypted += cipher.final('hex');
   return crypted;
 }
 
-function decrypt(text, key){
-  var decipher = crypto.createDecipher('aes-256-cbc',key)
-  var dec = decipher.update(text,'hex','utf8')
+function decrypt(text, key) {
+  console.log(key);
+  var decipher = crypto.createDecipher('aes-256-cbc', key);
+  var dec = decipher.update(text,'hex','utf8');
   dec += decipher.final('utf8');
   return dec;
 }

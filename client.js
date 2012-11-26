@@ -90,17 +90,18 @@ function encryptCircuit(socket) {
         publickey: alice_public
       }
     }
-    var onion = wrapOnion(i, circuitKeys.length, message);
+    var onion = wrapPkexOnion(message);
     
     var oakMethod = function(data) {
       if(data.type == 'pkex') {
-        var shared_secret = alice.computeSecret(data.publickey, 'hex', 'hex');
-        circuitKeys.unshift(hash(shared_secret));
+        var shared_secret = hash(alice.computeSecret(data.publickey, 'hex', 'hex'));
+        circuitKeys.unshift(shared_secret);
         i++;
         if(i < circuit.length) {
           pkex();
         } else {
           console.log('Circuit ready!');
+          console.log(circuitKeys);
           circuitReady(socket);
         }
       }
@@ -152,24 +153,41 @@ function decrypt(text, key){
   return JSON.parse(dec);
 }
 
-function wrapOnion(i, ckl,message) {
-  for(var j = 0; j + 1 <= ckl; j++) {
-    //var encryptedMessage = message
-    var encryptedMessage = encrypt(message, circuitKeys[j]);
-    if(j == i) {
+var wrapPkexOnion = function(message) {
+  if(circuitKeys.length == 0) {
+    return message
+  } else {
+    //var encryptedMessage = encrypt(message, circuitKeys[0]);
+    var encryptedMessage = message;
+    for(var j = 0; j < circuitKeys.length; j++) {
+        
       message = {
         redirect: true,
+        next: circuit[circuitKeys.length -j],
         content: encryptedMessage
       }
-    } else {
-      message = {
-        redirect: true,
-        next: circuit[i - j],
-        content: encryptedMessage
-      }        
+      
+      encryptedMessage = encrypt(message, circuitKeys[j]);
     }
+    return encryptedMessage;
   }
-  return message;
+}
+
+var wrapOnion = function(message) {
+  var encryptedMessage = encrypt(message, circuitKeys[0]);
+  console.log('Encrypting with: ' + circuitKeys[0]);
+  for(var j = 0; j < circuitKeys.length - 1; j++) {
+        
+    message = {
+      redirect: true,
+      next: circuit[circuitKeys.length - j - 1],
+      content: encryptedMessage
+    }
+    
+    console.log('Encrypting with: ' + circuitKeys[j + 1]); 
+    encryptedMessage = encrypt(message, circuitKeys[j + 1]);
+  }
+  return encryptedMessage;
 }
 
 function ask(question, format, callback) {
@@ -199,7 +217,9 @@ function circuitReady(socket) {
         message: data
       }
     }
-    var onion = wrapOnion(3, circuitKeys.length - 1, message);
+    var onion = wrapOnion(message);
+    console.log('Sending data onion: ');
+    console.log(onion);
     socket.send('tordata', onion);
   });
 }
