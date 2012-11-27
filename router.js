@@ -1,10 +1,7 @@
-console.log('OAK ROUTER v0.1');
-console.log('- Kasper Rasmussen');
-console.log();
-console.log('[LOG]');
-
+var routerID = parseInt(process.argv[2]);
+console.log(routerID);
 var crypto = require('crypto');
-var PORT = process.argv[2];
+var PORT = 1440 + routerID;
 var ME = '127.0.0.1:' + PORT;
 
 var router = require('./tcp.js').server(PORT);
@@ -14,7 +11,7 @@ bob.generateKeys('hex');
 var bob_secret = undefined; 
 
 router.on('connection', function(socket) {
-  console.log('New circuit');
+  consolelog('Ny bane');
   var nextRouterConnected = false;
   var nextRouter; 
     
@@ -32,7 +29,7 @@ router.on('connection', function(socket) {
     if(bob_secret == undefined) {
       if(data.content.type == 'pkex') {
         bob_secret = hash(bob.computeSecret(data.content.publickey, 'hex', 'hex'));
-        console.log('My key: ' + bob_secret);
+        consolelog('Min nøgle: ' + bob_secret);
         var bob_publickey = bob.getPublicKey('hex');
         var backmessage = {
           oak: data.content.oak,
@@ -41,7 +38,7 @@ router.on('connection', function(socket) {
         }
         socket.send('tordataback', backmessage);
       } else {
-        console.log('Received unexpected data');
+        consol.log('Modtog uforventet data');
       }   
     } else {
       data = JSON.parse(decrypt(data, bob_secret));
@@ -77,7 +74,7 @@ var OAKDIRPORT = 1337
 var sockets = require('./tcp.js').client(OAKDIRIP, OAKDIRPORT);
 sockets.on('connection', function(socket) {
   socket.send('port', PORT);
-  console.log('On network: oak://' + OAKDIRIP + ':' + OAKDIRPORT)
+  consolelog('På register: ' + OAKDIRIP + ':' + OAKDIRPORT)
 });
 
 function encrypt(text, key) {
@@ -107,3 +104,37 @@ function hash(data) {
     md5sum.update(data);
     return md5sum.digest('hex');
 }
+
+
+var PRESENTPORT = 8010 + routerID;
+var SOCKETIOPORT = 8020 + routerID;
+
+var io = require('socket.io').listen(SOCKETIOPORT);
+io.set('log level', 1)
+var log = [];
+
+var socket = undefined;
+io.sockets.on('connection', function (socket0) {
+  socket0.emit('previous', { log: log });
+  socket = socket0;
+});
+
+function consolelog(text) {
+  log.push(text);
+  console.log(text);
+  if(socket !== undefined) {
+    socket.emit('log', text);
+  }
+  //socket.emit('log', text);
+}
+
+var http = require('http');
+var thunder = require('./thunder.js');
+http.createServer(function (req, res) {
+  thunder.pump('./http/router.html', {router: routerID}, req, res);
+}).listen(PRESENTPORT, '127.0.0.1');
+
+console.log('OAK ROUTER v0.1');
+console.log('- Kasper Rasmussen');
+console.log();
+console.log('[LOG]');
