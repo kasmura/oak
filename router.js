@@ -30,7 +30,6 @@ router.on('connection', function(socket) {
     //console.log(data);
     ////var data = data0;
     if(bob_secret == undefined) {
-      console.log(data);
       if(data.content.type == 'pkex') {
         bob_secret = hash(bob.computeSecret(data.content.publickey, 'hex', 'hex'));
         console.log('My key: ' + bob_secret);
@@ -45,9 +44,7 @@ router.on('connection', function(socket) {
         console.log('Received unexpected data');
       }   
     } else {
-      console.log(data);
       data = JSON.parse(decrypt(data, bob_secret));
-      console.log('Object: ' + JSON.stringify(data));
       if(nextRouterConnected == false) {
         var next0 = data.next.split(':');
         var next = {ip: next0[0], port: next0[1]}
@@ -56,6 +53,13 @@ router.on('connection', function(socket) {
         sockets.on('connection', function(socket2) {
           nextRouter = socket2;
           nextRouterConnected = true;
+          nextRouter.on('backstream', function(backmessage) {
+            var decrypted = decrypt2(backmessage, bob_secret);
+            //console.dir(JSON.stringify(decrypted));
+            if(decrypted.redirect == true) {
+                socket.send('backstream', decrypted.content);
+            }
+          });
           nextRouter.on('tordataback', function(backmessage) {
             socket.send('tordataback', backmessage);
           });
@@ -84,11 +88,17 @@ function encrypt(text, key) {
 }
 
 function decrypt(text, key) {
-  console.log(key);
   var decipher = crypto.createDecipher('aes-256-cbc', key);
   var dec = decipher.update(text,'hex','utf8');
   dec += decipher.final('utf8');
   return dec;
+}
+
+function decrypt2(text, key) {
+  var decipher = crypto.createDecipher('aes-256-cbc',key)
+  var dec = decipher.update(text,'hex','utf8')
+  dec += decipher.final('utf8');
+  return JSON.parse(dec);
 }
 
 function hash(data) {

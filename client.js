@@ -12,6 +12,8 @@ var OPTIONS = {
 var circuit;
 var receipient;
 
+var myKey = randomHash();
+console.log(myKey);
 
 function handleList(routers) {
   console.log('Building circuit...');
@@ -61,6 +63,8 @@ function client() {
 var oaks = [];
 
 var circuitKeys = [];
+var circuitKeys2 = [];
+var somekeys;
 
 // Public-key encryption
 var alice = crypto.getDiffieHellman('modp5');
@@ -74,6 +78,24 @@ function encryptCircuit(socket) {
       if(oaks[i]['id'] == data.oak) {
         oaks[i].method(data);
       }
+    }
+  });
+  
+  socket.on('backstream', function(backdata) {
+    var decrypted = decrypt2(backdata, myKey);
+    //console.dir(JSON.stringify(decrypted));
+    if(decrypted.redirect == false) {
+      //console.log('Received backstream data!')
+      if(decrypted.content.type == 'backkeysok') {
+        startEcho(socket);
+      } else if(decrypted.content.type == 'message') {
+        console.log(decrypted.content.message);
+        echoinput(socket);
+      } else {
+        console.log('Message type was not expected');
+      }
+    } else {
+      console.log('Received unexpected data');
     }
   });
 
@@ -153,6 +175,13 @@ function decrypt(text, key){
   return JSON.parse(dec);
 }
 
+function decrypt2(text, key) {
+  var decipher = crypto.createDecipher('aes-256-cbc',key)
+  var dec = decipher.update(text,'hex','utf8')
+  dec += decipher.final('utf8');
+  return JSON.parse(dec);
+}
+
 var wrapPkexOnion = function(message) {
   if(circuitKeys.length == 0) {
     return message
@@ -175,7 +204,7 @@ var wrapPkexOnion = function(message) {
 
 var wrapOnion = function(message) {
   var encryptedMessage = encrypt(message, circuitKeys[0]);
-  console.log('Encrypting with: ' + circuitKeys[0]);
+  //console.log('Encrypting with: ' + circuitKeys[0]);
   for(var j = 0; j < circuitKeys.length - 1; j++) {
         
     message = {
@@ -184,7 +213,7 @@ var wrapOnion = function(message) {
       content: encryptedMessage
     }
     
-    console.log('Encrypting with: ' + circuitKeys[j + 1]); 
+    //console.log('Encrypting with: ' + circuitKeys[j + 1]); 
     encryptedMessage = encrypt(message, circuitKeys[j + 1]);
   }
   return encryptedMessage;
@@ -192,9 +221,10 @@ var wrapOnion = function(message) {
 
 function ask(question, format, callback) {
  var stdin = process.stdin, stdout = process.stdout;
- 
  stdin.resume();
- stdout.write(question + ": ");
+ if(question !== '') {
+  stdout.write(question + ": ");
+ }
  
  stdin.once('data', function(data) {
    data = data.toString().trim();
@@ -208,18 +238,53 @@ function ask(question, format, callback) {
  });
 }
 
+function getBackKeys(testkeys) {
+  testkeys.splice(0,1);
+  testkeys.reverse();
+  testkeys.unshift(myKey);
+  return testkeys;
+}
+
 function circuitReady(socket) {
-  ask('Send', /.+/, function(data) {
+    
+    var newkeys = [];
+    for(var i = 0; i < circuitKeys.length; i++) {
+      newkeys.push(circuitKeys[i]);
+    }
+    
+    //var backkeys = ['lol1', 'lol2', 'lol3'];
+    var backkeys = getBackKeys(newkeys);
+    console.log('Backkeys:');
+    console.log(backkeys);
+    
     var message = {
       redirect: false,
       content: {
-        type: 'message',
-        message: data
+        type: 'backkeys',
+        message: backkeys
       }
     }
     var onion = wrapOnion(message);
-    console.log('Sending data onion: ');
-    console.log(onion);
     socket.send('tordata', onion);
-  });
+}
+
+function startEcho(socket) {
+  console.log('')
+  console.log('ECHO ' + receipient);
+  console.log('')
+  echoinput(socket);
+}
+
+function echoinput(socket) {
+    ask('', /.+/, function(data) {
+      var message = {
+      redirect: false,
+        content: {
+          type: 'message',
+          message: data
+        }
+      }
+      var onion = wrapOnion(message);
+      socket.send('tordata', onion);
+    });
 }

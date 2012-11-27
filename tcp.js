@@ -89,7 +89,7 @@ module.exports.server = server;
 function client(host, port) {
     var Sockets = function(){
       events.EventEmitter.call(this);
-      
+      this.setMaxListeners(0);
       function emit(event, data) {
         if(data) {
             this.emit(event, data);
@@ -126,6 +126,7 @@ function client(host, port) {
     var extraproto = {
       send: send
     };
+    
     socket = _.extend(socket0, extraproto);
     
     client.connect(PORT, '127.0.0.1', function() {
