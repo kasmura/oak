@@ -1,9 +1,5 @@
-console.log('OAK CLIENT v0.1');
-console.log('- Kasper Rasmussen');
-console.log();
-console.log('[LOG]');
-
 var crypto = require('crypto');
+var log = [];
 
 var OPTIONS = {
   minRouters: 3,
@@ -15,17 +11,15 @@ var receipient;
 var myKey = randomHash();
 console.log(myKey);
 
-function handleList(routers) {
-  console.log('Building circuit...');
+function handleList(routers, receipient2) {
   if(routers.length >= OPTIONS.minRouters) {
     circuit = chooseCircuit(routers);
-    ask('Receipient', /[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\:[0-9]{1,5}/, function(receipient2) {
-      receipient = receipient2;
-      circuit.push(receipient);
-      client();
-    });
+    consolelog('Bygger bane...');
+    receipient = receipient2;
+    circuit.push(receipient);
+    client();
   } else {
-    console.log('Network size not big enough');
+    consolelog('Netværkets kapacitet er ikke stor nok');
   }
 }
 
@@ -40,22 +34,29 @@ function chooseCircuit(routers) {
   return circuit;
 }
 
-var request = require('request');
-console.log('Connecting to OAK-network: http://127.0.0.1:8080')
-request('http://127.0.0.1:8080', function (error, response, body) {
-  if (!error && response.statusCode == 200) {
-    var routers = JSON.parse(body);
-    handleList(routers);
-  }
-});
+
+function getDirectory(network, receipient) {
+  var request = require('request');
+  consolelog('Forbinder til netværk: ' + network);
+  request('http://' + network, function (error, response, body) {
+    if (!error && response.statusCode == 200) {
+      var routers = JSON.parse(body);
+      iosocket.emit('connected');
+      handleList(routers, receipient);
+    }
+  });
+}
+
+var socket;
 
 function client() {
-  console.log(circuit);
+  //consolelog(circuit);
   var circuit0 = circuit[0].split(':');
   var circuit1 = {ip: circuit0[0], port: circuit0[1]}
   
   var sockets = require('./tcp.js').client(circuit1.ip, circuit1.port);
-  sockets.on('connection', function(socket) {
+  sockets.on('connection', function(socket0) {
+    socket = socket0;
     encryptCircuit(socket);
   });
 }
@@ -89,17 +90,17 @@ function encryptCircuit(socket) {
       if(decrypted.content.type == 'backkeysok') {
         startEcho(socket);
       } else if(decrypted.content.type == 'message') {
-        console.log(decrypted.content.message);
+        consolelog('Modtager: ' + decrypted.content.message);
         echoinput(socket);
       } else {
-        console.log('Message type was not expected');
+        consolelog('Beskeden-typen var ikke forventet');
       }
     } else {
-      console.log('Received unexpected data');
+      consolelog('Modtog uforventet data');
     }
   });
 
-  console.log('Encrypting circuit...');
+  consolelog('Krypterer bane...');
   var i = 0;
   function pkex() {
     var oakID = randomHash();
@@ -118,12 +119,14 @@ function encryptCircuit(socket) {
       if(data.type == 'pkex') {
         var shared_secret = hash(alice.computeSecret(data.publickey, 'hex', 'hex'));
         circuitKeys.unshift(shared_secret);
+        var progress = circuitKeys.length / circuit.length * 100;
+        iosocket.emit('test', progress);
         i++;
         if(i < circuit.length) {
           pkex();
         } else {
-          console.log('Circuit ready!');
-          console.log(circuitKeys);
+          consolelog('Klar bane!');
+          //consolelog(circuitKeys);
           circuitReady(socket);
         }
       }
@@ -254,8 +257,8 @@ function circuitReady(socket) {
     
     //var backkeys = ['lol1', 'lol2', 'lol3'];
     var backkeys = getBackKeys(newkeys);
-    console.log('Backkeys:');
-    console.log(backkeys);
+    //consolelog('Backkeys:');
+    //consolelog(backkeys);
     
     var message = {
       redirect: false,
@@ -269,14 +272,15 @@ function circuitReady(socket) {
 }
 
 function startEcho(socket) {
-  console.log('')
-  console.log('ECHO ' + receipient);
-  console.log('')
+  consolelog('')
+  consolelog('ECHO ' + receipient);
+  consolelog('')
   echoinput(socket);
 }
 
 function echoinput(socket) {
     ask('', /.+/, function(data) {
+      consolelog('Klient: ' + data);
       var message = {
       redirect: false,
         content: {
@@ -288,3 +292,112 @@ function echoinput(socket) {
       socket.send('tordata', onion);
     });
 }
+
+var PRESENTPORT  = 8030;
+var SOCKETIOPORT = 8031;
+
+var io = require('socket.io').listen(SOCKETIOPORT);
+io.set('log level', 1)
+
+var iosocket = undefined;
+io.sockets.on('connection', function (socket0) {
+  iosocket = socket0;
+  iosocket.on('establishconnection', function(data) {
+    getDirectory(data.network, data.receipient);
+  });
+  iosocket.on('sendmessage', function(data) {
+        consolelog('Klient: ' + data);
+      var message = {
+      redirect: false,
+        content: {
+          type: 'message',
+          message: data
+        }
+      }
+      var onion = wrapOnion(message);
+      socket.send('tordata', onion);
+  })
+  iosocket.emit('previous', { log: log });
+});
+
+function consolelog(text) {
+  log.push(text);
+  console.log(text);
+  if(socket !== undefined) {
+    iosocket.emit('log', text);
+  }
+}
+
+var getNetworkIP = (function () {
+    var ignoreRE = /^(127\.0\.0\.1|::1|fe80(:1)?::1(%.*)?)$/i;
+
+    var exec = require('child_process').exec;
+    var cached;    
+    var command;
+    var filterRE;
+
+    switch (process.platform) {
+    // TODO: implement for OSs without ifconfig command
+    case 'darwin':
+         command = 'ifconfig';
+         filterRE = /\binet\s+([^\s]+)/g;
+         // filterRE = /\binet6\s+([^\s]+)/g; // IPv6
+         break;
+    default:
+         command = 'ifconfig';
+         filterRE = /\binet\b[^:]+:\s*([^\s]+)/g;
+         // filterRE = /\binet6[^:]+:\s*([^\s]+)/g; // IPv6
+         break;
+    }
+
+    return function (callback, bypassCache) {
+         // get cached value
+        if (cached && !bypassCache) {
+            callback(null, cached);
+            return;
+        }
+        // system call
+        exec(command, function (error, stdout, sterr) {
+            var ips = [];
+            // extract IPs
+            var matches = stdout.match(filterRE);
+            // JS has no lookbehind REs, so we need a trick
+            for (var i = 0; i < matches.length; i++) {
+                ips.push(matches[i].replace(filterRE, '$1'));
+            }
+
+            // filter BS
+            for (var i = 0, l = ips.length; i < l; i++) {
+                if (!ignoreRE.test(ips[i])) {
+                    //if (!error) {
+                        cached = ips[i];
+                    //}
+                    callback(error, ips[i]);
+                    return;
+                }
+            }
+            // nothing found
+            callback(error, null);
+        });
+    };
+})();
+
+var http = require('http');
+var thunder = require('./thunder.js');
+http.createServer(function (req, res) {
+  getNetworkIP(function (error, ip0) {
+    thunder.pump('./http/client.html', {ip: ip0}, req, res);
+    if (error) {
+        console.log('error:', error);
+    }
+}, false);
+}).listen(PRESENTPORT, '0.0.0.0');
+
+
+getNetworkIP(function (error, ip) {
+  console.log('OAK CLIENT v0.1');
+console.log('- Kasper Rasmussen');
+console.log();
+consolelog('Kører på http://' + ip + ':' + PRESENTPORT);
+console.log('[LOG]'); 
+});

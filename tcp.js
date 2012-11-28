@@ -14,7 +14,7 @@ var LOGMODE = false;
 function server(port) {
     
     // TCP host is default to 127.0.0.1
-    var HOST = '127.0.0.1';
+    var HOST = '0.0.0.0';
     // Server port has to be specified
     var PORT = port;
     
@@ -129,7 +129,7 @@ function client(host, port) {
     
     socket = _.extend(socket0, extraproto);
     
-    client.connect(PORT, '127.0.0.1', function() {
+    client.connect(PORT, '0.0.0.0', function() {
       tcpjsLog('tcp.js: Connected to ' + HOST + ':' + PORT);
       sockets.emit('connection', socket);
     });
