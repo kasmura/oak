@@ -1,3 +1,21 @@
+function getIP() {
+  var myIP;
+  var os=require('os');
+var ifaces=os.networkInterfaces();
+for (var dev in ifaces) {
+  var alias=0;
+  ifaces[dev].forEach(function(details){
+    if (details.family=='IPv4') {
+      if(details.address != '127.0.0.1') {
+        myIP = details.address;
+      }
+      ++alias;
+    }
+  });
+}
+return myIP;
+}
+var IP = getIP();
 var crypto = require('crypto');
 var log = [];
 
@@ -328,76 +346,15 @@ function consolelog(text) {
   }
 }
 
-var getNetworkIP = (function () {
-    var ignoreRE = /^(127\.0\.0\.1|::1|fe80(:1)?::1(%.*)?)$/i;
-
-    var exec = require('child_process').exec;
-    var cached;    
-    var command;
-    var filterRE;
-
-    switch (process.platform) {
-    // TODO: implement for OSs without ifconfig command
-    case 'darwin':
-         command = 'ifconfig';
-         filterRE = /\binet\s+([^\s]+)/g;
-         // filterRE = /\binet6\s+([^\s]+)/g; // IPv6
-         break;
-    default:
-         command = 'ifconfig';
-         filterRE = /\binet\b[^:]+:\s*([^\s]+)/g;
-         // filterRE = /\binet6[^:]+:\s*([^\s]+)/g; // IPv6
-         break;
-    }
-
-    return function (callback, bypassCache) {
-         // get cached value
-        if (cached && !bypassCache) {
-            callback(null, cached);
-            return;
-        }
-        // system call
-        exec(command, function (error, stdout, sterr) {
-            var ips = [];
-            // extract IPs
-            var matches = stdout.match(filterRE);
-            // JS has no lookbehind REs, so we need a trick
-            for (var i = 0; i < matches.length; i++) {
-                ips.push(matches[i].replace(filterRE, '$1'));
-            }
-
-            // filter BS
-            for (var i = 0, l = ips.length; i < l; i++) {
-                if (!ignoreRE.test(ips[i])) {
-                    //if (!error) {
-                        cached = ips[i];
-                    //}
-                    callback(error, ips[i]);
-                    return;
-                }
-            }
-            // nothing found
-            callback(error, null);
-        });
-    };
-})();
-
 var http = require('http');
 var thunder = require('./thunder.js');
 http.createServer(function (req, res) {
-  getNetworkIP(function (error, ip0) {
-    thunder.pump('./http/client.html', {ip: ip0}, req, res);
-    if (error) {
-        console.log('error:', error);
-    }
-}, false);
+    thunder.pump('./http/client.html', {ip: IP}, req, res);
 }).listen(PRESENTPORT, '0.0.0.0');
 
 
-getNetworkIP(function (error, ip) {
   console.log('OAK CLIENT v0.1');
 console.log('- Kasper Rasmussen');
 console.log();
-consolelog('Kører på http://' + ip + ':' + PRESENTPORT);
+consolelog('Kører på http://' + IP + ':' + PRESENTPORT);
 console.log('[LOG]'); 
-});
