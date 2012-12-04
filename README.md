@@ -22,7 +22,6 @@ client.connect('127.0.0.1:1234');
 ### Server
 ```js
 var server = require('oak').server();
-server.network = 'oak://127.0.0.1:4321';
 
 server.on('connection', function (socket) {
   socket.send('news', { hello: 'world'});
