@@ -1,43 +1,45 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <meta charset='utf-8'>
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+    <title>Oak by kasmura</title>
 
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-
-    <title>Oak by kasmura</title>
   </head>
-
   <body>
-    <header>
-      <div class="inner">
+    <div class="wrapper">
+      <header>
         <h1>Oak</h1>
-        <h2>Anonymous and encrypted communication for node.js</h2>
-        <a href="https://github.com/kasmura/oak" class="button"><small>View project on</small>GitHub</a>
-      </div>
-    </header>
+        <p>Anonymous and encrypted communication for node.js</p>
 
-    <div id="content-wrapper">
-      <div class="inner clearfix">
-        <section id="main-content">
-          <h1>Oak</h1>
+        <p class="view"><a href="https://github.com/kasmura/oak">View the Project on GitHub <small>kasmura/oak</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/kasmura/oak/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/kasmura/oak/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/kasmura/oak">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="oak" class="anchor" href="#oak"><span class="octicon octicon-link"></span></a>Oak</h1>
 
 <p>Oak is Node.js project delivering an anonymous and secure network between nodes. It uses encrypted JSON-onions to make
 all communication untracable and obscured.</p>
 
 <p><strong>This is the planned result of oak:</strong></p>
 
-<h3>Client</h3>
+<h3>
+<a name="client" class="anchor" href="#client"><span class="octicon octicon-link"></span></a>Client</h3>
 
-<div class="highlight"><pre><span class="kd">var</span> <span class="nx">client</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'oak'</span><span class="p">).</span><span class="nx">client</span><span class="p">();</span>
+<div class="highlight highlight-js"><pre><span class="kd">var</span> <span class="nx">client</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'oak'</span><span class="p">).</span><span class="nx">client</span><span class="p">();</span>
 <span class="nx">client</span><span class="p">.</span><span class="nx">network</span> <span class="o">=</span> <span class="s1">'oak://127.0.0.1:4321'</span><span class="p">;</span>
 
 <span class="nx">client</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connection'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">socket</span><span class="p">)</span> <span class="p">{</span>
@@ -50,9 +52,10 @@ all communication untracable and obscured.</p>
 <span class="nx">client</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">'127.0.0.1:1234'</span><span class="p">);</span>
 </pre></div>
 
-<h3>Server</h3>
+<h3>
+<a name="server" class="anchor" href="#server"><span class="octicon octicon-link"></span></a>Server</h3>
 
-<div class="highlight"><pre><span class="kd">var</span> <span class="nx">server</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'oak'</span><span class="p">).</span><span class="nx">server</span><span class="p">();</span>
+<div class="highlight highlight-js"><pre><span class="kd">var</span> <span class="nx">server</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'oak'</span><span class="p">).</span><span class="nx">server</span><span class="p">();</span>
 <span class="nx">server</span><span class="p">.</span><span class="nx">network</span> <span class="o">=</span> <span class="s1">'oak://127.0.0.1:4321'</span><span class="p">;</span>
 
 <span class="nx">server</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'connection'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">socket</span><span class="p">)</span> <span class="p">{</span>
@@ -65,67 +68,64 @@ all communication untracable and obscured.</p>
 <span class="nx">server</span><span class="p">.</span><span class="nx">listen</span><span class="p">(</span><span class="s1">'127.0.0.1:1234'</span><span class="p">)</span>
 </pre></div>
 
-<h2>Model</h2>
+<h2>
+<a name="model" class="anchor" href="#model"><span class="octicon octicon-link"></span></a>Model</h2>
 
-<h3>Router</h3>
+<h3>
+<a name="router" class="anchor" href="#router"><span class="octicon octicon-link"></span></a>Router</h3>
 
 <p>A oak-network consists of various routers that together enable a user of the network to anonymize and secure
 his communication. It receives information and redirects it to the next router in the circuit.</p>
 
-<h3>Directory-server</h3>
+<h3>
+<a name="directory-server" class="anchor" href="#directory-server"><span class="octicon octicon-link"></span></a>Directory-server</h3>
 
 <p>The routers are connected to a central-server were they report that they are a part of the network.
 This server is called a directory-server and has a list of the routers in the network. The client can connect to the
 directory-server, and download the list to build a circuit from. Directory-servers are a tempory component of Oak
 and should be replaced by a distributed list of routers, so that the network will be more balanced and secure.</p>
 
-<h3>Circuit</h3>
+<h3>
+<a name="circuit" class="anchor" href="#circuit"><span class="octicon octicon-link"></span></a>Circuit</h3>
 
 <p>The client chooses random routers from the list, and builds a circuit through which the data can travel.
 It exchanges keys with the routers in the circuit, and when the client has keys for all the routers, it can built
 an onion-object when it wants to send data.</p>
 
-<h3>Onion-objects</h3>
+<h3>
+<a name="onion-objects" class="anchor" href="#onion-objects"><span class="octicon octicon-link"></span></a>Onion-objects</h3>
 
 <p>An onion-object is data encrypted multiple times, so that each router decrypt the onion, thus metaphorically peeling
 a layer of the onion, with his own key, and sends the rest down the circuit, until it reaches it's destination.</p>
 
-<h2>Implementation</h2>
+<h2>
+<a name="implementation" class="anchor" href="#implementation"><span class="octicon octicon-link"></span></a>Implementation</h2>
 
 <p>The model described above, is what is trying to be implemented using node.js. Communication between clients and routers,
 and routers and dir-server are TCP. For TCP the tcp.js library is used. Router-lists are served by the dir-server through
 HTTP.</p>
 
-<h2>Status</h2>
+<h2>
+<a name="status" class="anchor" href="#status"><span class="octicon octicon-link"></span></a>Status</h2>
 
-<h3>Done</h3>
+<h3>
+<a name="done" class="anchor" href="#done"><span class="octicon octicon-link"></span></a>Done</h3>
 
 <p>Client downloads router-list and builds circuit</p>
 
 <p>Exchanging keys with all routers in circuit</p>
 
-<h3>Currently</h3>
+<h3>
+<a name="currently" class="anchor" href="#currently"><span class="octicon octicon-link"></span></a>Currently</h3>
 
 <p>Experimental communication with last-node</p>
-        </section>
-
-        <aside id="sidebar">
-          <a href="https://github.com/kasmura/oak/zipball/master" class="button">
-            <small>Download</small>
-            .zip file
-          </a>
-          <a href="https://github.com/kasmura/oak/tarball/master" class="button">
-            <small>Download</small>
-            .tar.gz file
-          </a>
-
-          <p class="repo-owner"><a href="https://github.com/kasmura/oak"></a> is maintained by <a href="https://github.com/kasmura">kasmura</a>.</p>
-
-          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.</p>
-        </aside>
-      </div>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/kasmura">kasmura</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
     </div>
-
-  
+    <script src="javascripts/scale.fix.js"></script>
+    
   </body>
 </html>
